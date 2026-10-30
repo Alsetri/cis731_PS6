@@ -1,0 +1,28 @@
+{
+  "n_vectors": 20000,
+  "d": 384,
+  "distinct_faiss_ids": 20000,
+  "collisions": 0,
+  "ntotal_after_add": 20000,
+  "reconstruct_matches_original": true,
+  "naive_readd": {
+    "ntotal": 20001,
+    "grew_by": 1,
+    "verdict": "add_with_ids DUPLICATED the id instead of replacing it"
+  },
+  "correct_update": {
+    "ntotal_after_remove_all_copies": 19999,
+    "ntotal_after_readd": 20000,
+    "net_vs_original": 0,
+    "note": "remove_ids removes EVERY copy of the id, so the duplicate created above is cleaned up in the same call"
+  },
+  "update_reconstruct_is_new_vector": true,
+  "after_delete_ntotal": 19999,
+  "deleted_id_still_reconstructs": false,
+  "sidecar_entries_after_delete": 19999,
+  "orphan_check": {
+    "faiss_ntotal": 19999,
+    "sidecar_size": 19999,
+    "in_bijection": true
+  }
+}

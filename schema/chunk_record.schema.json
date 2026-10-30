@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Alsetri/cis731_PS6/schema/chunk_record.schema.json",
+  "title": "VdbChunkRecord",
+  "description": "Provenance-bearing vector-database record for CIS 731 PS 6. Extends the MP 5 CorpusChunk: MP 5 established record_id, track, source_id, ts_start/ts_end, text, ingest_ts and license_class for the streaming ingest; this record carries those forward under VDB names and adds the embedding, the ontology linkage and the provenance hash. A record that validates here is admissible to the index; admissibility is NOT the same as correctness, and the three properties JSON Schema structurally cannot express are listed in x-contract-enforced below.",
+  "type": "object",
+
+  "x-contract-enforced": [
+    "UnitNorm: ||vector||_2 == 1 +/- 1e-5. JSON Schema cannot compute an aggregate over an array, so this is checked in contracts.py::vdb_upsert.",
+    "HashIntegrity: source_hash == sha256(raw document bytes). Schema can check the shape of a digest, never that it is the right digest.",
+    "ChunkIdDerivation: chunk_id == sha256(doc_id|chunk_index|chunker_version). Enforced in contracts.py so re-embedding is idempotent.",
+    "EmbeddingCompleteness and NoOrphanEmbeddings are set-level invariants over the whole index and cannot be expressed about a single record at all."
+  ],
+
+  "properties": {
+    "chunk_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of 'doc_id|chunk_index|chunker_version', lowercase hex. Deterministic by construction so that re-running the chunker produces the same id and vdb_upsert REPLACES rather than duplicates. A random uuid here would make every re-embed create orphans."
+    },
+    "doc_id": {
+      "type": "string",
+      "pattern": "^(genius|rym|spotify|librivox|pd|instructor):[A-Za-z0-9._-]{1,64}$",
+      "description": "Source-prefixed document identifier. The prefix carries provenance in the key itself (MP 5 INV-10 whitelist), so an unlisted source is detectable without a join."
+    },
+    "chunk_index": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Zero-based position of this chunk within its document."
+    },
+    "chunker_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of the chunking code. Part of chunk_id, so changing the chunker necessarily changes every id and forces a full rebuild instead of silently mixing two chunkings in one index."
+    },
+    "source_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the raw source document as acquired. Detects upstream edits: if the source changes, the hash changes and the chunk is known stale."
+    },
+    "license_class": {
+      "type": "string",
+      "enum": ["public_domain", "cc_by", "instructor_provided", "licensed_api", "fair_use_excerpt"],
+      "description": "Licensing status of the SOURCE DOCUMENT. INV-9 restricts corpus content to public-domain or instructor-provided material; the last two values exist so non-conforming material is representable and therefore rejectable, rather than being quietly relabelled. admit_document admits only the INV-9 set."
+    },
+    "corpus_type": {
+      "type": "string",
+      "enum": ["lyrics", "ya_literature", "xianxia", "asr_transcript"],
+      "description": "Which corpus family this record belongs to. Selects whether release_year or broadcast_ts is required."
+    },
+    "release_year": {
+      "type": "integer",
+      "minimum": 1900,
+      "maximum": 2030,
+      "description": "Publication year of the work. Required for VDB corpora; the Era axis of the ontology is derived from it."
+    },
+    "broadcast_ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Broadcast timestamp. Required for ASR transcripts in place of release_year."
+    },
+    "trope_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(LEX|THM|SON|NAR)-[0-9]{4}$"
+      },
+      "uniqueItems": true,
+      "description": "Tropes this chunk attests, keyed into trope_ontology.json. May be empty: most chunks attest nothing, and forcing a non-empty array would push annotators to invent labels."
+    },
+    "embedding_model": {
+      "type": "string",
+      "enum": [
+        "sentence-transformers/all-MiniLM-L6-v2",
+        "sentence-transformers/all-mpnet-base-v2"
+      ],
+      "description": "Pinned model identity. Vectors from different models are not comparable, so mixing them in one index silently corrupts every similarity score."
+    },
+    "embedding_dim": {
+      "type": "integer",
+      "enum": [384, 768],
+      "description": "Vector dimension. Constrained against embedding_model below."
+    },
+    "vector": {
+      "type": "array",
+      "items": {"type": "number", "minimum": -1.0, "maximum": 1.0},
+      "minItems": 384,
+      "maxItems": 768,
+      "description": "The embedding, unit-normalized. Component bounds follow from unit norm. Exact length is tied to embedding_dim by contract, and the norm itself is checked in vdb_upsert."
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8192,
+      "description": "The chunk text as embedded. Retained so a retrieved vector can be shown to a human and an attribution claim can be audited."
+    },
+    "token_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 256,
+      "description": "Tokens as counted by embedding_model's tokenizer. The 256 ceiling is the model's max sequence length: a larger value means the tail was silently truncated and the vector does not represent the text."
+    },
+    "created_ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this record was written."
+    },
+    "provenance_verified": {
+      "type": "boolean",
+      "description": "Postcondition flag set by admit_document. vdb_upsert refuses any record where this is not true, so an unverified chunk cannot reach the index even if it is otherwise well-formed."
+    }
+  },
+
+  "required": [
+    "chunk_id", "doc_id", "chunk_index", "chunker_version", "source_hash",
+    "license_class", "corpus_type", "trope_ids", "embedding_model",
+    "embedding_dim", "vector", "text", "token_count", "created_ts",
+    "provenance_verified"
+  ],
+  "unevaluatedProperties": false,
+
+  "allOf": [
+    {
+      "if": {"properties": {"corpus_type": {"const": "asr_transcript"}}, "required": ["corpus_type"]},
+      "then": {"required": ["broadcast_ts"], "not": {"required": ["release_year"]}},
+      "else": {"required": ["release_year"], "not": {"required": ["broadcast_ts"]}}
+    },
+    {
+      "if": {"properties": {"embedding_model": {"const": "sentence-transformers/all-MiniLM-L6-v2"}}, "required": ["embedding_model"]},
+      "then": {
+        "properties": {
+          "embedding_dim": {"const": 384},
+          "vector": {"minItems": 384, "maxItems": 384}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"embedding_model": {"const": "sentence-transformers/all-mpnet-base-v2"}}, "required": ["embedding_model"]},
+      "then": {
+        "properties": {
+          "embedding_dim": {"const": 768},
+          "vector": {"minItems": 768, "maxItems": 768}
+        }
+      }
+    }
+  ]
+}

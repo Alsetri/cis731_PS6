@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Alsetri/cis731_PS6/schema/trope_ontology.json",
+  "ontology_id": "ksu-cis731-regional-hiphop-trope-ontology",
+  "version": "0.1.0",
+  "authority": "DERIVED",
+  "authority_note": "CIS 731 submission. Per INV-11 this ontology is derived by the author, not the instructor-provided schema. No class, relation or identifier here is copied from the instructor ontology; the hierarchy is motivated in granularity_justification below and is answerable to the competency questions in competency_questions.md.",
+  "author": "Abdulla Mansoor (abdulla03@ksu.edu), CIS 731",
+  "scope": "Regional and temporal variation in American hip-hop lyrics, as consumed by the Task 5 (iNterpret) evaluation harness.",
+
+  "classes": {
+    "Trope": {
+      "abstract": true,
+      "definition": "A recurring, nameable convention that a chunk can attest. Abstract: nothing is typed as a bare Trope, because the subtype determines what evidence counts.",
+      "subclasses": ["LexicalTrope", "ThematicTrope", "SonicTrope", "NarrativeTrope"]
+    },
+    "LexicalTrope": {
+      "parent": "Trope",
+      "id_prefix": "LEX",
+      "definition": "A slang term or fixed phrase whose use marks a scene or era (e.g. a regional intensifier).",
+      "evidence": "Surface form present in chunk text; the strongest evidence type because it is directly checkable against the retrieved chunk."
+    },
+    "ThematicTrope": {
+      "parent": "Trope",
+      "id_prefix": "THM",
+      "definition": "A recurring subject or preoccupation (e.g. block economics, car culture, regional rivalry).",
+      "evidence": "Human judgement over the chunk; not surface-checkable, so it carries an annotator id and is excluded from automatic attribution scoring."
+    },
+    "SonicTrope": {
+      "parent": "Trope",
+      "id_prefix": "SON",
+      "definition": "A production or delivery signature named in or inferable from the lyrics (e.g. chopped-and-screwed tempo, triplet flow).",
+      "evidence": "Lyric reference or external metadata. Flagged because a lyrics-only corpus under-observes it -- this is a stated coverage limitation, not a gap to paper over."
+    },
+    "NarrativeTrope": {
+      "parent": "Trope",
+      "id_prefix": "NAR",
+      "definition": "A storytelling pattern spanning a verse (e.g. the come-up narrative, the cautionary street parable).",
+      "evidence": "Human judgement over a whole verse; the reason the chunk cap is one verse rather than one bar."
+    },
+
+    "Scene": {
+      "abstract": true,
+      "definition": "The socio-geographic context a trope is situated in.",
+      "subclasses": ["Region", "MicroGenre"]
+    },
+    "Region": {
+      "parent": "Scene",
+      "id_prefix": "REG",
+      "definition": "A coarse geographic scene: South, West Coast, East Coast, Midwest.",
+      "closed_set": true
+    },
+    "MicroGenre": {
+      "parent": "Scene",
+      "id_prefix": "MIC",
+      "definition": "A named style situated in an originating region (Trap, Crunk, Memphis, G-Funk, Hyphy, Boom Bap, Drill).",
+      "closed_set": false
+    },
+    "Era": {
+      "id_prefix": "ERA",
+      "definition": "A half-open year interval [start, end). Derived from release_year on the chunk record, never asserted independently."
+    },
+    "Artist": {"id_prefix": "ART", "definition": "A performing credit."},
+    "Work": {"id_prefix": "WRK", "definition": "A track. One Work maps to one doc_id in the chunk record."},
+    "Chunk": {
+      "id_prefix": "CHK",
+      "definition": "The retrievable unit. Identified by chunk_id in chunk_record.schema.json; this is the join point between the ontology and the vector store."
+    }
+  },
+
+  "relations": {
+    "originatesIn": {
+      "domain": "MicroGenre", "range": "Region",
+      "cardinality": "1..1",
+      "note": "Exactly one origin per micro-genre. Diffusion is modelled by diffusedTo, NOT by giving a micro-genre several origins -- collapsing the two would make the research question unaskable."
+    },
+    "diffusedTo": {
+      "domain": "MicroGenre", "range": "Region",
+      "cardinality": "0..*",
+      "attributes": {"first_attested_year": "integer", "attesting_chunk_id": "string"},
+      "note": "The temporal half of the research question. Every diffusion edge must name the chunk that evidences it, so a drift claim is auditable to a retrievable passage."
+    },
+    "attestedIn": {
+      "domain": "Trope", "range": "Chunk",
+      "cardinality": "1..*",
+      "note": "THE PROVENANCE TEETH. A trope with zero attestations is not admissible to the ontology: it would be an assertion about the corpus that the corpus does not support. Minimum cardinality 1 is what makes the coverage metric meaningful."
+    },
+    "characteristicOf": {
+      "domain": "Trope", "range": "MicroGenre",
+      "cardinality": "0..*",
+      "attributes": {"strength": "number in [0,1]"},
+      "note": "Many-to-many and weighted: a trope shared by Trap and Drill is normal and must not force a false choice."
+    },
+    "activeDuring": {"domain": "MicroGenre", "range": "Era", "cardinality": "1..*"},
+    "performedBy": {"domain": "Work", "range": "Artist", "cardinality": "1..*"},
+    "affiliatedWith": {
+      "domain": "Artist", "range": "Region",
+      "cardinality": "0..*",
+      "attributes": {"confidence": "number in [0,1]", "method": "string"},
+      "note": "Carries confidence because artist-to-region assignment comes from fuzzy matching, which PS 4 named as a bias source. An unqualified edge here would launder a guess into a fact."
+    },
+    "chunkOf": {"domain": "Chunk", "range": "Work", "cardinality": "1..1"}
+  },
+
+  "granularity_justification": {
+    "why_four_trope_subtypes": "One undifferentiated Trope class cannot answer whether regional identity is carried lexically or sonically, and MP 7 needs the lexical/sonic split as separate feature families. Finer granularity -- a class per word sense -- would demand word-sense disambiguation that cannot be validated at 12k documents, and would multiply the annotation burden past what one student can attest.",
+    "why_chunk_level_attestation": "Retrieval returns chunks, so attesting at track level would break the chain between a retrieved passage and the claim it supports: a reader could not check the claim against what the system actually returned. Chunk-level attestation is what makes the attribution-rate metric computable.",
+    "why_micro_genre_between_region_and_trope": "Attaching tropes straight to Region conflates origin with spread and makes diffusion unrepresentable. MicroGenre is the level at which style is actually named by practitioners, and it is the level at which the originatesIn / diffusedTo split becomes expressible.",
+    "why_era_is_derived": "Era is computed from release_year rather than asserted, so an era boundary cannot disagree with the record it describes. Boundaries are a presentation choice; the underlying year is the fact."
+  },
+
+  "closed_sets": {
+    "Region": [
+      {"id": "REG-0001", "label": "South"},
+      {"id": "REG-0002", "label": "West Coast"},
+      {"id": "REG-0003", "label": "East Coast"},
+      {"id": "REG-0004", "label": "Midwest"}
+    ]
+  },
+
+  "seed_instances": {
+    "MicroGenre": [
+      {"id": "MIC-0001", "label": "Trap", "originatesIn": "REG-0001", "activeDuring": ["ERA-0003", "ERA-0004"]},
+      {"id": "MIC-0002", "label": "Crunk", "originatesIn": "REG-0001", "activeDuring": ["ERA-0002", "ERA-0003"]},
+      {"id": "MIC-0003", "label": "Memphis", "originatesIn": "REG-0001", "activeDuring": ["ERA-0001", "ERA-0002"]},
+      {"id": "MIC-0004", "label": "G-Funk", "originatesIn": "REG-0002", "activeDuring": ["ERA-0001", "ERA-0002"]},
+      {"id": "MIC-0005", "label": "Hyphy", "originatesIn": "REG-0002", "activeDuring": ["ERA-0002", "ERA-0003"]},
+      {"id": "MIC-0006", "label": "Boom Bap", "originatesIn": "REG-0003", "activeDuring": ["ERA-0001", "ERA-0002"]},
+      {"id": "MIC-0007", "label": "Drill", "originatesIn": "REG-0004", "activeDuring": ["ERA-0003", "ERA-0004"]}
+    ],
+    "Era": [
+      {"id": "ERA-0001", "label": "1990s", "start": 1990, "end": 2000},
+      {"id": "ERA-0002", "label": "2000s", "start": 2000, "end": 2010},
+      {"id": "ERA-0003", "label": "2010s", "start": 2010, "end": 2020},
+      {"id": "ERA-0004", "label": "2020s", "start": 2020, "end": 2030}
+    ]
+  },
+
+  "note_on_drill": "Drill is seeded as originating in the Midwest (Chicago). This is a deliberate, contestable modelling decision: UK drill and Brooklyn drill are then diffusedTo edges rather than separate origins. The alternative -- three co-equal origins -- would make 'where did drill start' unanswerable, which is exactly the kind of question the ontology exists to answer."
+}

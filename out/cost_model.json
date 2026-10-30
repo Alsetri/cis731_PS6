@@ -1,0 +1,209 @@
+{
+  "inputs": {
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "d": 384,
+    "max_seq_len": 256,
+    "bytes_per_float": 4,
+    "n_docs": 12000,
+    "L_mean_tokens_per_doc": 740,
+    "L_status": "ESTIMATED, not measured -- see sensitivity"
+  },
+  "chunk_length_cap": {
+    "model_ceiling_tokens": 256,
+    "model_ceiling_reason": "all-MiniLM-L6-v2 truncates at 256 tokens; a longer chunk is silently half-embedded and its tail is unretrievable.",
+    "granularity_ceiling_tokens": 192,
+    "granularity_reason": "a verse is ~16 bars x ~12 tokens = ~192 tokens; one verse is the smallest span that carries a trope with its context.",
+    "binding_cap_tokens": 192,
+    "chosen_n": 192,
+    "chosen_s": 128,
+    "headroom_tokens": 64,
+    "headroom_reason": "64 tokens of slack absorbs the prompt/special tokens and the variance in bar length without hitting truncation."
+  },
+  "strategies": [
+    {
+      "strategy": "fixed-window(n=192, s=128)",
+      "n": 192,
+      "s": 128,
+      "overlap_rho": 0.3333,
+      "inflation_1_over_1_minus_rho": 1.5,
+      "inflation_check_n_over_s": 1.5,
+      "chunks_per_doc": 6,
+      "tokens_emitted_per_doc": 1152,
+      "token_amplification": 1.557,
+      "corpus": {
+        "n_chunks": 72000,
+        "formula": "N_chunks * d * 4",
+        "bytes": 110592000,
+        "mib": 105.47
+      }
+    },
+    {
+      "strategy": "fixed-window(n=192, s=192)",
+      "n": 192,
+      "s": 192,
+      "overlap_rho": 0.0,
+      "inflation_1_over_1_minus_rho": 1.0,
+      "inflation_check_n_over_s": 1.0,
+      "chunks_per_doc": 4,
+      "tokens_emitted_per_doc": 768,
+      "token_amplification": 1.038,
+      "corpus": {
+        "n_chunks": 48000,
+        "formula": "N_chunks * d * 4",
+        "bytes": 73728000,
+        "mib": 70.31
+      }
+    },
+    {
+      "strategy": "fixed-window(n=256, s=128)",
+      "n": 256,
+      "s": 128,
+      "overlap_rho": 0.5,
+      "inflation_1_over_1_minus_rho": 2.0,
+      "inflation_check_n_over_s": 2.0,
+      "chunks_per_doc": 5,
+      "tokens_emitted_per_doc": 1280,
+      "token_amplification": 1.73,
+      "corpus": {
+        "n_chunks": 60000,
+        "formula": "N_chunks * d * 4",
+        "bytes": 92160000,
+        "mib": 87.89
+      }
+    },
+    {
+      "strategy": "sentence-boundary(cap n=192, packing eta=0.85)",
+      "n": 192,
+      "packing_efficiency": 0.85,
+      "effective_window_tokens": 163.2,
+      "overlap_rho": 0.0,
+      "inflation_1_over_1_minus_rho": 1.0,
+      "chunks_per_doc": 5,
+      "tokens_emitted_per_doc": 740,
+      "token_amplification": 1.0,
+      "corpus": {
+        "n_chunks": 60000,
+        "formula": "N_chunks * d * 4",
+        "bytes": 92160000,
+        "mib": 87.89
+      }
+    },
+    {
+      "strategy": "structure-aware(sections~6.5)",
+      "sections_per_doc": 6.5,
+      "mean_section_tokens": 113.8,
+      "exceeds_max_seq": false,
+      "overlap_rho": 0.0,
+      "inflation_1_over_1_minus_rho": 1.0,
+      "chunks_per_doc": 7,
+      "tokens_emitted_per_doc": 740,
+      "token_amplification": 1.0,
+      "corpus": {
+        "n_chunks": 84000,
+        "formula": "N_chunks * d * 4",
+        "bytes": 129024000,
+        "mib": 123.05
+      }
+    }
+  ],
+  "sensitivity_to_L": [
+    {
+      "L": 400,
+      "fixed_192_128": {
+        "chunks_per_doc": 3,
+        "corpus_mib": 52.73
+      },
+      "sentence_192": {
+        "chunks_per_doc": 3,
+        "corpus_mib": 52.73
+      },
+      "structure_aware": {
+        "chunks_per_doc": 7,
+        "corpus_mib": 123.05
+      }
+    },
+    {
+      "L": 740,
+      "fixed_192_128": {
+        "chunks_per_doc": 6,
+        "corpus_mib": 105.47
+      },
+      "sentence_192": {
+        "chunks_per_doc": 5,
+        "corpus_mib": 87.89
+      },
+      "structure_aware": {
+        "chunks_per_doc": 7,
+        "corpus_mib": 123.05
+      }
+    },
+    {
+      "L": 1100,
+      "fixed_192_128": {
+        "chunks_per_doc": 9,
+        "corpus_mib": 158.2
+      },
+      "sentence_192": {
+        "chunks_per_doc": 7,
+        "corpus_mib": 123.05
+      },
+      "structure_aware": {
+        "chunks_per_doc": 7,
+        "corpus_mib": 123.05
+      }
+    }
+  ],
+  "reranking_latency": {
+    "model": "T = T_enc + T_ann + k * T_ce",
+    "k_retrieve": 50,
+    "k_final": 10,
+    "T_ann_source": "MEASURED, analysis/index_bench.py",
+    "T_enc_T_ce_source": "ESTIMATED from published CPU benchmarks; the models could not be downloaded in this environment, so these are not measured.",
+    "variants": [
+      {
+        "index": "IndexFlatIP (exact)",
+        "T_enc_ms": 8.0,
+        "T_ann_ms": 1.5856,
+        "k": 50,
+        "T_ce_ms": 22.0,
+        "k_times_T_ce_ms": 1100.0,
+        "T_total_ms": 1109.6,
+        "cross_encoder_share": 0.9914,
+        "ann_share": 0.001429
+      },
+      {
+        "index": "IndexIVFFlat(nlist=256, nprobe=4)",
+        "T_enc_ms": 8.0,
+        "T_ann_ms": 0.1181,
+        "k": 50,
+        "T_ce_ms": 22.0,
+        "k_times_T_ce_ms": 1100.0,
+        "T_total_ms": 1108.1,
+        "cross_encoder_share": 0.9927,
+        "ann_share": 0.000107
+      },
+      {
+        "index": "IndexFlatIP, k=20",
+        "T_enc_ms": 8.0,
+        "T_ann_ms": 1.5856,
+        "k": 20,
+        "T_ce_ms": 22.0,
+        "k_times_T_ce_ms": 440.0,
+        "T_total_ms": 449.6,
+        "cross_encoder_share": 0.9787,
+        "ann_share": 0.003527
+      },
+      {
+        "index": "IndexFlatIP, no re-rank",
+        "T_enc_ms": 8.0,
+        "T_ann_ms": 1.5856,
+        "k": 0,
+        "T_ce_ms": 22.0,
+        "k_times_T_ce_ms": 0.0,
+        "T_total_ms": 9.6,
+        "cross_encoder_share": 0.0,
+        "ann_share": 0.165415
+      }
+    ]
+  }
+}

@@ -1,0 +1,191 @@
+{
+  "jsonschema_version": "4.26.0",
+  "deal_version": "4.24.6",
+  "numpy_version": "2.5.3",
+  "total_cases": 36,
+  "passed": 36,
+  "failed": 0,
+  "result": "PASS",
+  "cases": [
+    {
+      "case": "chunk_record.schema.json is a valid Draft 2020-12 schema",
+      "ok": true,
+      "detail": "jsonschema 4.26.0"
+    },
+    {
+      "case": "canonical VDB (lyrics) record validates",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "ASR record with broadcast_ts validates",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "rejects: release_year present on an ASR record",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "rejects: ASR record missing broadcast_ts",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "rejects: VDB record missing release_year",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "rejects: unlisted source prefix in doc_id",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "rejects: licence outside the enum",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "rejects: embedding_dim disagrees with embedding_model",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "rejects: vector length disagrees with the model",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "rejects: token_count above the model max sequence length",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "rejects: malformed trope id",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "rejects: duplicate trope ids",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "rejects: source_hash not a sha256 digest",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "rejects: unknown extra property",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "rejects: empty text",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "admits public_domain and sets provenance_verified",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "recomputes source_hash from the bytes admitted",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "INV-9 refuses license_class=fair_use_excerpt",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "INV-9 refuses license_class=licensed_api",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "refuses a malformed source_hash",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "upsert inserts one vector",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "re-upserting the same chunk_id does NOT duplicate",
+      "ok": true,
+      "detail": "index holds 1"
+    },
+    {
+      "case": "refuses a record that never cleared admit_document",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "refuses a chunk_id that is not the derived digest",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "refuses a vector that is not unit-normalized",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "a clean corpus satisfies both invariants",
+      "ok": true,
+      "detail": "5 records, 5 vectors"
+    },
+    {
+      "case": "detects an admitted chunk with no vector",
+      "ok": true,
+      "detail": "found 1"
+    },
+    {
+      "case": "detects a vector with no live record",
+      "ok": true,
+      "detail": "found 1"
+    },
+    {
+      "case": "delete_chunk leaves the corpus in bijection",
+      "ok": true,
+      "detail": "4 records, 4 vectors"
+    },
+    {
+      "case": "ontology declares authority DERIVED",
+      "ok": true,
+      "detail": "DERIVED"
+    },
+    {
+      "case": "every relation declares domain, range and cardinality",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "attestedIn has minimum cardinality 1 (no unevidenced trope)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "trope id prefixes match the record schema pattern",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "every seeded micro-genre originates in a declared region",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "case": "every micro-genre's active eras exist",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}
